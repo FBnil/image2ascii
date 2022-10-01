@@ -4,17 +4,6 @@ use 5.010; # use feature 'say'
 use strict;
 use warnings;
 
-# https://stackoverflow.com/questions/26625876/how-to-get-image-whole-pixels-rgb-color-with-imagemagick
-# https://en.wikipedia.org/wiki/ANSI_escape_code#graphics
-# https://stackoverflow.com/questions/15682537/ansi-color-specific-rgb-sequence-bash
-# This guy made something similar: https://dom111.github.io/image-to-ansi/ but his colors are weird
-#
-# To create a palette:
-#  ./printcolors.sh  |awk '{print $2}' |while read x;do echo "xc:'$x' \\";done >generate_RGB256palette.sh
-#  Line 1: convert xc:'#000000' \
-#  Line last: +append palette.gif
-#  Then:  convert image.png +dither -remap palette.gif result.png
-
 my ($WIDTH, $Hcompress, $RGB256, $xtra, $verbose, $inputfile,$outputfile, $zlib) = (32,0,0,'',0);
 Getopt::Long::Configure ("bundling");
 GetOptions (
@@ -36,7 +25,7 @@ my $UPPER="▀"; # https://www.fileformat.info/info/unicode/char/2580/index.htm
 my $LOWER="▄"; # https://www.fileformat.info/info/unicode/char/2584/index.htm
 
 my ($mX,$mY); # max width/height
-my (%D,%T); # hash/dict T contains the color number and D ansicode.
+my (%D,%T); # hash/dict T contains the color number/string and D ansicode.
 
 # Pipe an imagemagick command into a filehandle. Reads lines like: 31,31,srgb(184,165,153)
 my $cmd = "convert $inputfile $xtra -resize $WIDTH "
@@ -59,14 +48,14 @@ while(defined($_=<FIN>)){
 		$D{$x}{$y}= $y%2? fg($r,$g,$b) : bg($r,$g,$b);
 		$T{$x}{$y}="$r,$g,$b";
 	}
-	$mX=$x;$mY=$y; 
+	$mX=$x; $mY=$y; # Lazy way to get max values
 }
 
 # Print Halfblocks ($LOWER) and grab 2 pixel rows to use as foreground and background color.
-for(my $y=0+0*8;$y<$mY-0*7;$y+=2){
+for(my $y=0 ; $y<$mY ; $y+=2){
 	print FOUT 'echo -e "' if($outputfile); 
 	my $s;
-	for(my $x=0+0*2;$x<$mX-0*10;++$x){
+	for(my $x=0 ; $x<$mX ; ++$x){
 		if($Hcompress && $x>0){
 			my $upisdown     =       $T{$x}{$y}   eq $T{$x}{$y+1};
 			my $wasupdown    = $x>0? $T{$x-1}{$y} eq $T{$x-1}{$y+1} :0; 
@@ -90,6 +79,7 @@ for(my $y=0+0*8;$y<$mY-0*7;$y+=2){
 
 	print FOUT restore(). '"'."\n" if($outputfile);	
 }
+
 if($outputfile){
 	if($zlib){
 		$cmd=`gzip $outputfile`;
@@ -101,11 +91,13 @@ if($outputfile){
 
 
 # Convert RGB to TrueColor Ansicode
+## Foreground TrueColor
 sub fg{
 	my($r,$g,$b) = @_;
 	return "\x1b[38;2;${r};${g};${b}m"
 }
 
+## Background TrueColor
 sub bg{
 	my($r,$g,$b) = @_;
 	return "\x1b[48;2;${r};${g};${b}m"
@@ -122,11 +114,12 @@ sub bg256{
 	return "\x1b[48;5;".rgbToAnsi256($r,$g,$b)."m"
 }
 
-# Remove all colors and restore terminal
+# Remove all colors and restore terminal to default
 sub restore{
 	return "\x1b[0m";
 }
 
+# Algorithm taken from:
 # https://github.com/Qix-/color-convert/blob/427cbb70540bb9e5b3e94aa3bb9f97957ee5fbc0/conversions.js#L555-L580
 sub rgbToAnsi256 {
 	my($r,$g,$b) = @_;
@@ -154,6 +147,7 @@ sub Mathround{
 	# my $rounded = int($float + $float/abs($float*2 || 1));
 }
 
+# Print the usage text in __DATA__
 sub usage {
 	print "$_" while (defined($_=<DATA>)) && !/__END__/;
 	exit 0;
@@ -188,3 +182,19 @@ convert rose: rose.png
 reset; ./image2ascii.pl -i rose.png -w 50% -r
 
 __END__
+
+Like Junk DNA, this part can be removed without loss of functionality of the program, but is important to me:
+
+# https://stackoverflow.com/questions/26625876/how-to-get-image-whole-pixels-rgb-color-with-imagemagick
+# https://en.wikipedia.org/wiki/ANSI_escape_code#graphics
+# https://stackoverflow.com/questions/15682537/ansi-color-specific-rgb-sequence-bash
+# This guy made something similar: https://dom111.github.io/image-to-ansi/ but his colors are weird
+#
+# To create a palette (for future replacement of rgbToAnsi256 with alternative algorithm):
+#  ./printcolors.sh  |awk '{print $2}' |while read x;do echo "xc:'$x' \\";done >generate_RGB256palette.sh
+#  Line 1: convert xc:'#000000' \
+#  Line last: +append palette.gif
+#  Then:  convert image.png +dither -remap palette.gif result.png
+#
+# Quadrants to antialias https://en.wikipedia.org/wiki/Block_Elements
+# Problem with Quadrants is that it does not display on windows putty (but it does on Linux) so it might be lots of work and less useful.
