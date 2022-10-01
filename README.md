@@ -30,6 +30,8 @@ convert rose: rose.png
 # If that did not display, use 256 colors instead and resize to 32 pixels wide:
 reset; ./image2ascii.pl -i rose.png -w 32 -r
 ```
+### Visual Example
+![visual_example](Screenshot_20221001_224913.png)
 
 ## Other similar projects
 
