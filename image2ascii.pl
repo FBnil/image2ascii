@@ -15,7 +15,7 @@ use warnings;
 #  Line last: +append palette.gif
 #  Then:  convert image.png +dither -remap palette.gif result.png
 
-my ($WIDTH, $Hcompress, $RGB256, $inputfile,$outputfile, $zlib,$xtra, $verbose) = (32,0,0);
+my ($WIDTH, $Hcompress, $RGB256, $xtra, $verbose, $inputfile,$outputfile, $zlib) = (32,0,0,'',0);
 Getopt::Long::Configure ("bundling");
 GetOptions (
 	"w|WIDTH=s" => \$WIDTH,
@@ -50,7 +50,8 @@ if($outputfile){
 }
 
 # Read file and fill hash pixel data
-while(my ($x,$y,$srgb,$r,$g,$b)=split /[(),]/,<FIN>){
+while(defined($_=<FIN>)){
+	my ($x,$y,$srgb,$r,$g,$b) = split /[(),]/,$_;
 	if($RGB256){
 		$D{$x}{$y}= $y%2? fg256($r,$g,$b) : bg256($r,$g,$b);
 		$T{$x}{$y}= rgbToAnsi256($r,$g,$b);
