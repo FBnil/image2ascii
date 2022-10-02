@@ -33,6 +33,15 @@ reset; ./image2ascii.pl -i rose.png -w 32 -r
 ### Visual Example
 ![visual_example](Screenshot_20221001_224913.png)
 
+In particular with flat looking images when viewing them with -r (256 color palette), you can dither them. 
+
+For example:
+```./image2ascii.pl -i rose.png   -x '-ordered-dither checks,2' -r```
+makes the colors more vivid. And for pictures of faces these seem to do pretty well: 
+```-x '-ordered-dither o4x4,8'```  or ```-x '-ordered-dither checks,8'```
+
+For all options, see the [ImageMagick documentation](https://imagemagick.org/script/command-line-options.php#ordered-dither): 
+
 ## Other similar projects
 
 ### [image-to-ansi](https://dom111.github.io/image-to-ansi/)
@@ -40,4 +49,4 @@ It's an online converter, but the resulting colors are sub-par.
 
 ## Algorithms used from others
 
-* Uses color reduction algorithm from [QIX](https://github.com/Qix-/color-convert/blob/master/README.md)
+* Uses the excelent color reduction algorithm from [QIX](https://github.com/Qix-/color-convert/blob/master/README.md)
